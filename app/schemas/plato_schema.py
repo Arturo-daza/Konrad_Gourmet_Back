@@ -27,3 +27,6 @@ class PlatoResponse(PlatoBase):
 
     class Config:
         from_attributes = True
+        
+class PlatoUpdate(PlatoBase):
+    ingredientes: Optional[List[IngredienteCreate]] = None
