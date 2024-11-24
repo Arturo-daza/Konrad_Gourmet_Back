@@ -1,28 +1,33 @@
-from typing import Optional, List
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import datetime
 
 class PedidoDetalleBase(BaseModel):
     id_plato: int
     cantidad: int
+    
+class PedidoDetalleResponse(PedidoDetalleBase):
     precio_unitario: float
-    observaciones: Optional[str]
-
+    subtotal: float
 
 class PedidoBase(BaseModel):
     mesa: int
-    estado: str = Field(..., max_length=50)
-    id_sucursal: int
-    fecha: Optional[str] 
-
+    fecha: Optional[datetime]
 
 class PedidoCreate(PedidoBase):
     detalles: List[PedidoDetalleBase]
 
+class PedidoUpdate(PedidoBase):
+    estado: Optional[str]
+    detalles: Optional[List[PedidoDetalleBase]]
+    class Config:
+        extra = "ignore"
 
 class PedidoResponse(PedidoBase):
     id_pedido: int
-    detalles: List[PedidoDetalleBase]
+    estado: str
+    total: float
+    detalles: List[PedidoDetalleResponse]
 
     class Config:
         from_attributes = True
