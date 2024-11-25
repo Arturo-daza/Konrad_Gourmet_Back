@@ -1,6 +1,8 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.middlewares.jwt_bearer import JWTBearer
+from app.schemas.plato_schema import PlatoPreparadoResponse
 from app.utils.database import DatabaseManager
 from app.facades.plato_facade import PlatoFacade
 from app.schemas import PlatoCreate, PlatoUpdate, PlatoResponse
@@ -42,7 +44,7 @@ def listar_platos(
     """Lista todos los platos."""
     security_manager = SeguridadManager(db)
     usuario_actual = security_manager.validar_token(token)
-
+    print(usuario_actual)
     if not security_manager.verificar_permisos(usuario_actual, "Listar Platos"):
         raise HTTPException(status_code=403, detail="No tienes permisos para listar platos.")
 
@@ -97,3 +99,12 @@ def eliminar_plato(
 
     facade = PlatoFacade(db)
     return facade.eliminar_plato(id_plato)
+
+@router.get("/acciones/preparables", response_model=List[PlatoPreparadoResponse], dependencies=[Depends(JWTBearer())])
+def listar_platos_preparables(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    """Lista los platos que se pueden preparar según el inventario."""
+    facade = PlatoFacade(db)
+    try:
+        return facade.listar_platos_preparables()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

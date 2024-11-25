@@ -16,3 +16,6 @@ class Producto(Base):
     categoria = relationship("CategoriaProducto", back_populates="productos")
     unidad = relationship("UnidadMedida", back_populates="productos")
     plato_productos = relationship("PlatoProducto", back_populates="producto")
+    
+    # Relación con Inventario
+    inventarios = relationship("Inventario", back_populates="producto")

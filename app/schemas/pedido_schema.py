@@ -6,13 +6,15 @@ class PedidoDetalleBase(BaseModel):
     id_plato: int
     cantidad: int
     
+    
 class PedidoDetalleResponse(PedidoDetalleBase):
     precio_unitario: float
     subtotal: float
 
 class PedidoBase(BaseModel):
     mesa: int
-    fecha: Optional[datetime]
+    fecha: Optional[datetime] = datetime.now()
+    id_sucursal: Optional[int] = 1
 
 class PedidoCreate(PedidoBase):
     detalles: List[PedidoDetalleBase]

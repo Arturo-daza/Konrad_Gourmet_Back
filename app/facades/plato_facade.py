@@ -1,6 +1,10 @@
+from sqlalchemy import and_, func, text
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy.sql.functions import coalesce
 from app.models import Plato, PlatoProducto, Producto
+from app.models.inventario import Inventario
+from app.models.unidad_medida import ConversionUnidades
 from app.schemas import PlatoCreate, PlatoUpdate
 
 class PlatoFacade:
@@ -82,3 +86,51 @@ class PlatoFacade:
         self.db.delete(plato)
         self.db.commit()
         return {"message": f"Plato con ID {id_plato} eliminado exitosamente."}
+    
+    def listar_platos_preparables(self):
+        """
+        Lista los platos que pueden ser preparados según el inventario disponible.
+        :return: Lista de platos con la cantidad máxima preparable.
+        """
+        query = text("""
+            SELECT
+                subquery.id_plato,
+                subquery.nombre AS Plato,
+                FLOOR(MIN(subquery.available_servings)) AS cantidad_preparable
+            FROM
+                (
+                    SELECT
+                        p.id_plato,
+                        p.nombre,
+                        (COALESCE(i.cantidad_disponible, 0) * cu.factor_conversion) / pp.cantidad AS available_servings
+                    FROM
+                        Plato p
+                    JOIN PlatoProducto pp ON
+                        p.id_plato = pp.id_plato
+                    JOIN Producto prod ON
+                        pp.id_producto = prod.id_producto
+                    LEFT JOIN Inventario i ON
+                        prod.id_producto = i.id_producto
+                    JOIN ConversionUnidades cu ON
+                        cu.id_unidad_base = prod.id_unidad_medida
+                        AND cu.id_unidad_convertida = pp.id_unidad_medida
+                ) AS subquery
+            GROUP BY
+                subquery.id_plato,
+                subquery.nombre
+            HAVING
+                FLOOR(MIN(subquery.available_servings)) > 0;
+        """)
+
+        # Ejecutar la consulta directamente usando SQLAlchemy
+        result = self.db.execute(query)
+        platos_preparables = result.fetchall()
+
+        return [
+            {
+                "id_plato": plato.id_plato,
+                "nombre": plato.Plato,
+                "cantidad_preparable": int(plato.cantidad_preparable)
+            }
+            for plato in platos_preparables
+        ]

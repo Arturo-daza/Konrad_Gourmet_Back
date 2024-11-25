@@ -15,7 +15,7 @@ class IngredienteCreate(BaseModel):
 
 class PlatoBase(BaseModel):
     nombre: str = Field(..., max_length=100)
-    descripcion: Optional[str]
+    descripcion: Optional[str] = ""
     precio: float
 
 class PlatoCreate(PlatoBase):
@@ -30,3 +30,8 @@ class PlatoResponse(PlatoBase):
         
 class PlatoUpdate(PlatoBase):
     ingredientes: Optional[List[IngredienteCreate]] = None
+    
+class PlatoPreparadoResponse(BaseModel):
+    id_plato: int
+    nombre: str
+    cantidad_preparable: int

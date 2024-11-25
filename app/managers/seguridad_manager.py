@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from jwt import encode, decode, exceptions
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.models.usuario import Usuario
 from app.models.permiso import Permiso
 from app.models.rol import Rol
+from app.schemas.user_schema import UsuarioResponse
 from app.utils.database import DatabaseManager
 import os
 
@@ -27,9 +28,19 @@ class SeguridadManager:
         """
         try:
             user = self.db.query(Usuario).filter(Usuario.email == email).first()
-            if not user or not pwd_context.verify(password, user.password):
-                raise Exception("Credenciales inválidas")
-            token = self._generar_token({"email": user.email, "rol": user.rol.nombre, "permisos": [p.nombre for p in user.rol.permisos]})
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Credenciales incorrectas. Usuario no encontrado."
+                )
+
+            # Verificar contraseña
+            if not pwd_context.verify(password, user.password):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Credenciales incorrectas. Contraseña inválida."
+                )
+            token = self._generar_token({"username": user.nombre, "email": user.email, "rol": user.rol.nombre, "permisos": [p.nombre for p in user.rol.permisos]})
             return token
         except SQLAlchemyError as e:
             raise Exception(f"Error en la autenticación: {str(e)}")
@@ -111,6 +122,7 @@ class SeguridadManager:
         to_encode = data.copy()
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         to_encode.update({"exp": expire})
+        print(SECRET_KEY)
         return encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     
     def verificar_permisos(self, usuario: Usuario, permiso: str) -> bool:
@@ -126,3 +138,16 @@ class SeguridadManager:
         # Esto puede depender del contexto de la autenticación (por ejemplo, JWT o sesión)
         # En este caso, se valida directamente por el token
         raise NotImplementedError("Este método depende del flujo de autenticación")
+    
+    def get_all_users(self) -> list[UsuarioResponse]:
+        """
+        Obtiene todos los usuarios del sistema.
+        :return: Lista de usuarios en formato UsuarioResponse.
+        """
+        try:
+            # Consulta todos los usuarios de la base de datos
+            users = self.db.query(Usuario).all()
+            # Convierte los objetos ORM a la respuesta esperada
+            return [UsuarioResponse.from_orm(user) for user in users]
+        except Exception as e:
+            raise ValueError(f"Error al obtener los usuarios: {str(e)}")

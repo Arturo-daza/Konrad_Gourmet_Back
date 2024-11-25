@@ -22,6 +22,7 @@ class JWTBearer(HTTPBearer):
 
             # Validar el token y devolver el objeto Usuario
             usuario = seguridad_manager.validar_token(auth.credentials)
+            
 
             # Verificar que el usuario exista
             if not usuario:

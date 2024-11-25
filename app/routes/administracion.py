@@ -15,13 +15,13 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/usuarios", response_model=UsuarioResponse)
+@router.post("/", response_model=UsuarioResponse)
 def create_user(user_data: UsuarioCreate, db: Session = Depends(get_db)):
     """Crea un nuevo usuario."""
     facade = AdministrationFacade(db)
     return facade.crear_usuario(user_data)
 
-@router.get("/usuarios", response_model=list)
+@router.get("/", response_model=list)
 def get_all_users(db: Session = Depends(get_db)):
     """Obtiene todos los usuarios."""
     facade = AdministrationFacade(db)

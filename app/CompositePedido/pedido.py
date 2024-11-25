@@ -3,10 +3,11 @@ from .pedido_detalle import PedidoDetalle  # Importa los detalles del pedido
 from .componente_pedido import ComponentePedido  # Importa la clase abstracta
 
 class Pedido(ComponentePedido):
-    def __init__(self, mesa: int, estado: str, fecha: str):
+    def __init__(self, mesa: int, estado: str, fecha: str, sucursal: int = 1):
         self.mesa = mesa
         self.estado = estado
         self.fecha = fecha
+        self.sucursal = sucursal
         self.detalles: List[PedidoDetalle] = []  # Lista de detalles del pedido
 
     def agregar_detalle(self, detalle: PedidoDetalle):

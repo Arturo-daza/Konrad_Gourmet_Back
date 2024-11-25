@@ -13,5 +13,5 @@ class Pedido(Base):
     fecha = Column(TIMESTAMP, nullable=False)
     id_sucursal = Column(Integer, ForeignKey("Sucursal.id_sucursal"))
 
-    sucursal = relationship("Sucursal")
+    sucursal = relationship("Sucursal", back_populates="pedidos")
     detalles = relationship("PedidoDetalle", back_populates="pedido")

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.utils.database import DatabaseManager
 from app.facades.producto_facade import ProductoFacade
-from app.schemas import ProductoCreate, ProductoBase
+from app.schemas import ProductoCreate, ProductoBase, ProductoResponse
 from app.middlewares.jwt_bearer import JWTBearer
 from app.managers.seguridad_manager import SeguridadManager
 
@@ -19,7 +19,7 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/", response_model=ProductoBase,  dependencies=[Depends(JWTBearer())])
+@router.post("/", response_model=ProductoResponse,  dependencies=[Depends(JWTBearer())])
 def crear_producto(
     producto_data: ProductoCreate,
     db: Session = Depends(get_db),
@@ -36,7 +36,7 @@ def crear_producto(
     facade = ProductoFacade(db)
     return facade.crear_producto(producto_data)
 
-@router.get("/", response_model=list[ProductoBase],  dependencies=[Depends(JWTBearer())])
+@router.get("/", response_model=list[ProductoResponse],  dependencies=[Depends(JWTBearer())])
 def listar_productos(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
@@ -51,7 +51,7 @@ def listar_productos(
     facade = ProductoFacade(db)
     return facade.listar_productos()
 
-@router.get("/{id_producto}", response_model=ProductoBase,  dependencies=[Depends(JWTBearer())])
+@router.get("/{id_producto}", response_model=ProductoResponse,  dependencies=[Depends(JWTBearer())])
 def obtener_producto(
     id_producto: int,
     db: Session = Depends(get_db),

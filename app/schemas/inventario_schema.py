@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-
+from datetime import datetime
 
 class InventarioBase(BaseModel):
     id_producto: int
@@ -8,14 +8,16 @@ class InventarioBase(BaseModel):
     cantidad_disponible: int
     cantidad_maxima: int
 
+class InventarioCreate(InventarioBase):
+    pass
 
 class InventarioUpdate(BaseModel):
     cantidad_disponible: Optional[int]
     cantidad_maxima: Optional[int]
 
-
 class InventarioResponse(InventarioBase):
     id_inventario: int
+    fecha_ultima_actualizacion: datetime
 
     class Config:
         from_attributes = True
