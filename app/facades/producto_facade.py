@@ -1,7 +1,9 @@
+from typing import List
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
 from app.models import Producto, CategoriaProducto, UnidadMedida
 from app.schemas import ProductoCreate, ProductoBase
+from app.schemas.producto_schema import ProductoResponse
 
 
 class ProductoFacade:
@@ -36,6 +38,10 @@ class ProductoFacade:
     def listar_productos(self):
         """Lista todos los productos."""
         return self.db.query(Producto).all()
+    
+    def obtener_productos_batch(self, ids_producto: List[int]) -> List[ProductoResponse]:
+        productos = self.db.query(Producto).filter(Producto.id_producto.in_(ids_producto)).all()
+        return [ProductoResponse.from_orm(producto) for producto in productos]
 
     def obtener_producto(self, id_producto: int):
         """Obtiene un producto por su ID."""

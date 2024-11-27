@@ -1,6 +1,8 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.middlewares.jwt_bearer import JWTBearer
+from app.schemas.inventario_schema import InventarioDetalleResponse
 from app.utils.database import DatabaseManager
 from app.facades.inventario_facade import InventarioFacade
 from app.schemas import InventarioCreate, InventarioUpdate, InventarioResponse
@@ -20,7 +22,6 @@ def get_db():
         db.close()
 
 @router.post("/", response_model=InventarioResponse, dependencies=[Depends(JWTBearer())])
-@router.post("/", response_model=InventarioResponse)
 def crear_inventario(
     inventario_data: InventarioCreate,
     db: Session = Depends(get_db),
@@ -61,13 +62,13 @@ def actualizar_inventario(
         inventario_data.cantidad_maxima,
     )
 
-@router.get("/{id_sucursal}", response_model=list[InventarioResponse], dependencies=[Depends(JWTBearer())])
+@router.get("/sucursal/{id_sucursal}", response_model=List[InventarioDetalleResponse], dependencies=[Depends(JWTBearer())])
 def obtener_inventario_por_sucursal(
     id_sucursal: int,
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
 ):
-    """Obtiene el inventario de una sucursal."""
+    """Obtiene el inventario detallado de una sucursal."""
     seguridad_manager = SeguridadManager(db)
     usuario_actual = seguridad_manager.validar_token(token)
 
@@ -75,7 +76,8 @@ def obtener_inventario_por_sucursal(
         raise HTTPException(status_code=403, detail="No tienes permisos para consultar inventario.")
 
     facade = InventarioFacade(db)
-    return facade.obtener_inventario_por_sucursal(id_sucursal)
+    return facade.obtener_inventario_con_detalles(id_sucursal)
+
 
 @router.delete("/{id_inventario}", dependencies=[Depends(JWTBearer())])
 def eliminar_inventario(
@@ -93,5 +95,53 @@ def eliminar_inventario(
     facade = InventarioFacade(db)
     facade.eliminar_inventario(id_inventario)
     return {"message": f"Inventario con ID {id_inventario} eliminado exitosamente."}
+
+@router.get("/{id_inventario}", response_model=InventarioDetalleResponse, dependencies=[Depends(JWTBearer())])
+def obtener_inventario_por_id(
+    id_inventario: int,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    """
+    Obtiene un inventario específico por su ID.
+    """
+    seguridad_manager = SeguridadManager(db)
+    usuario_actual = seguridad_manager.validar_token(token)
+
+    if not seguridad_manager.verificar_permisos(usuario_actual, "Consultar Inventario"):
+        raise HTTPException(status_code=403, detail="No tienes permisos para consultar inventario.")
+
+    facade = InventarioFacade(db)
+    try:
+        return facade.obtener_inventario_por_id(id_inventario)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{id_inventario}/recepcionar", response_model=InventarioResponse, dependencies=[Depends(JWTBearer())])
+def recepcionar_unidades(
+    id_inventario: int,
+    cantidad: int,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    """
+    Recepciona unidades al inventario.
+    """
+    seguridad_manager = SeguridadManager(db)
+    usuario_actual = seguridad_manager.validar_token(token)
+
+    if not seguridad_manager.verificar_permisos(usuario_actual, "Actualizar Inventario"):
+        raise HTTPException(status_code=403, detail="No tienes permisos para actualizar inventario.")
+
+    facade = InventarioFacade(db)
+    try:
+        return facade.recepcionar_unidades(id_inventario, cantidad)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 

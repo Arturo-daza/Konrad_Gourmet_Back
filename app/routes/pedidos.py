@@ -45,6 +45,32 @@ def registrar_pedido(
 
     return facade.crear_pedido(pedido_data)
 
+@router.put("/{id_pedido}", response_model=PedidoResponse, dependencies=[Depends(JWTBearer())])
+def actualizar_pedido(
+    id_pedido: int,
+    pedido_data: PedidoUpdate,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    """
+    Actualiza un pedido existente.
+    """
+    # Validar el token y permisos
+    security_manager = SeguridadManager(db)
+    usuario_actual = security_manager.validar_token(token)
+
+    if not security_manager.verificar_permisos(usuario_actual, "Actualizar Pedido"):
+        raise HTTPException(status_code=403, detail="No tienes permisos para actualizar pedidos.")
+
+    # Actualizar pedido usando el facade
+    facade = PedidoFacade(db, email_adapter)
+    try:
+        return facade.actualizar_pedido(id_pedido, pedido_data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+
 @router.get("/", response_model=list[PedidoResponse], dependencies=[Depends(JWTBearer())])
 def listar_pedidos(
     db: Session = Depends(get_db),

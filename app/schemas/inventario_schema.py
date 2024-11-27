@@ -21,3 +21,22 @@ class InventarioResponse(InventarioBase):
 
     class Config:
         from_attributes = True
+
+
+class ProductoDetalle(BaseModel):
+    nombre: str
+    unidad_medida: str
+    precio: float
+
+class InventarioDetalleResponse(BaseModel):
+    id_inventario: int
+    id_producto: int
+    id_sucursal: int
+    cantidad_disponible: int
+    cantidad_maxima: int
+    fecha_ultima_actualizacion: datetime
+    producto: ProductoDetalle
+    costo_total: float
+
+    class Config:
+        from_attributes = True

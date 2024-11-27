@@ -1,6 +1,8 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from app.schemas.producto_schema import ProductoIDs
 from app.utils.database import DatabaseManager
 from app.facades.producto_facade import ProductoFacade
 from app.schemas import ProductoCreate, ProductoBase, ProductoResponse
@@ -99,3 +101,19 @@ def eliminar_producto(
 
     facade = ProductoFacade(db)
     return facade.eliminar_producto(id_producto)
+
+@router.post("/batch", response_model=List[ProductoResponse], dependencies=[Depends(JWTBearer())])
+def obtener_productos_batch(
+    producto_ids: ProductoIDs,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    """Obtiene múltiples productos pasando una lista de IDs."""
+    security_manager = SeguridadManager(db)
+    usuario_actual = security_manager.validar_token(token)
+
+    if not security_manager.verificar_permisos(usuario_actual, "Listar Productos"):
+        raise HTTPException(status_code=403, detail="No tienes permisos para listar productos.")
+
+    facade = ProductoFacade(db)
+    return facade.obtener_productos_batch(producto_ids.ids_producto)

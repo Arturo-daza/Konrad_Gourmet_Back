@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import BaseModel, Field
 
 class ProductoBase(BaseModel):
@@ -14,3 +15,7 @@ class ProductoResponse(ProductoBase):
 
     class Config:
         from_attributes = True
+        
+# Nuevo modelo Pydantic para recibir una lista de IDs
+class ProductoIDs(BaseModel):
+    ids_producto: List[int]

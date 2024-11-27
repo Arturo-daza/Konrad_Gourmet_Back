@@ -151,7 +151,6 @@ class PedidoFacade:
 
         return self.obtener_pedido(id_pedido)
     
-    from app.schemas import PedidoResponse, PedidoDetalleResponse
 
     def actualizar_estado_pedido(self, id_pedido: int, nuevo_estado: str):
         """

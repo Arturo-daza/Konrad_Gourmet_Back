@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 from typing import List, Optional
 from app.models.inventario import Inventario
@@ -6,6 +6,7 @@ from app.models.plato import PlatoProducto
 from app.models.producto import Producto
 from datetime import datetime
 from app.models import ConversionUnidades
+
 
 class InventarioFacade:
     def __init__(self, db: Session):
@@ -133,5 +134,93 @@ class InventarioFacade:
 
         # Mover el commit fuera de los bucles
         self.db.commit()
-
         
+    
+
+    def obtener_inventario_con_detalles(self, id_sucursal: int):
+        """
+        Obtiene el inventario de una sucursal con los detalles del producto y el costo total calculado.
+        """
+        inventario = (
+            self.db.query(Inventario)
+            .options(joinedload(Inventario.producto))  # Cargar detalles de producto
+            .filter(Inventario.id_sucursal == id_sucursal)
+            .all()
+        )
+
+        resultado = []
+        for item in inventario:
+            producto = item.producto
+            costo_total = item.cantidad_disponible * producto.precio
+            resultado.append({
+                "id_inventario": item.id_inventario,
+                "id_producto": item.id_producto,
+                "id_sucursal": item.id_sucursal,
+                "cantidad_disponible": item.cantidad_disponible,
+                "cantidad_maxima": item.cantidad_maxima,
+                "fecha_ultima_actualizacion": item.fecha_ultima_actualizacion,
+                "producto": {
+                    "nombre": producto.nombre,
+                    "unidad_medida": producto.unidad.nombre,
+                    "precio": producto.precio
+                },
+                "costo_total": costo_total
+            })
+            
+        return resultado
+    
+    def obtener_inventario_por_id(self, id_inventario: int):
+        """
+        Obtiene un inventario específico con detalles del producto.
+        """
+        inventario = (
+            self.db.query(Inventario)
+            .options(joinedload(Inventario.producto))  # Cargar detalles de producto
+            .filter(Inventario.id_inventario == id_inventario)
+            .first()
+        )
+
+        if not inventario:
+            raise ValueError(f"Inventario con ID {id_inventario} no encontrado.")
+
+        producto = inventario.producto
+        costo_total = inventario.cantidad_disponible * producto.precio
+        return {
+            "id_inventario": inventario.id_inventario,
+            "id_producto": inventario.id_producto,
+            "id_sucursal": inventario.id_sucursal,
+            "cantidad_disponible": inventario.cantidad_disponible,
+            "cantidad_maxima": inventario.cantidad_maxima,
+            "fecha_ultima_actualizacion": inventario.fecha_ultima_actualizacion,
+            "producto": {
+                "nombre": producto.nombre,
+                "unidad_medida": producto.unidad.nombre,
+                "precio": producto.precio
+            },
+            "costo_total": costo_total
+        }
+        
+    def recepcionar_unidades(self, id_inventario: int, cantidad: int):
+        """
+        Incrementa la cantidad disponible en el inventario.
+        """
+        inventario = self.db.query(Inventario).filter(Inventario.id_inventario == id_inventario).first()
+        if not inventario:
+            raise ValueError(f"Inventario con ID {id_inventario} no encontrado.")
+
+        inventario.cantidad_disponible += cantidad
+        inventario.fecha_ultima_actualizacion = datetime.utcnow()
+        self.db.commit()
+        # Retornar el inventario actualizado con los datos completos
+        return {
+            "id_inventario": inventario.id_inventario,
+            "id_producto": inventario.id_producto,
+            "id_sucursal": inventario.id_sucursal,
+            "cantidad_disponible": inventario.cantidad_disponible,
+            "cantidad_maxima": inventario.cantidad_maxima,
+            "fecha_ultima_actualizacion": inventario.fecha_ultima_actualizacion,
+        }
+
+
+
+                
